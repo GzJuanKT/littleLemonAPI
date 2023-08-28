@@ -37,6 +37,9 @@ INSTALLED_APPS = [
     'django.contrib.sessions',
     'django.contrib.messages',
     'django.contrib.staticfiles',
+    'littleLemon',
+    'rest_framework',
+    'djoser',
 ]
 
 MIDDLEWARE = [
@@ -75,9 +78,17 @@ WSGI_APPLICATION = 'littleLemonAPI.wsgi.application'
 
 DATABASES = {
     'default': {
-        'ENGINE': 'django.db.backends.sqlite3',
-        'NAME': BASE_DIR / 'db.sqlite3',
-    }
+        'ENGINE': 'django.db.backends.mysql',
+        'NAME': 'littlelemon',
+        'USER': 'root',
+        'PASSWORD': 'J@nda.1110',
+        'HOST': 'localhost',  # O la dirección de tu servidor MySQL
+        'PORT': '3306',       # El puerto por defecto de MySQL
+    },
+    'OPTIONS': {
+        'charset': 'utf8mb4',
+        'collation': 'utf8mb4_general_ci',
+    },
 }
 
 
