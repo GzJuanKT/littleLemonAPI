@@ -133,3 +133,48 @@ def removeUserManagerGroup(request, id):
             return Response({'message': 'User removed from the Manager group successfully'}, status=status.HTTP_200_OK)
         else:
             return Response({'message': 'User not found in the Manager group'}, status=status.HTTP_404_NOT_FOUND)
+
+
+@api_view(['GET', 'POST'])
+@permission_classes([IsAdminUser])
+def listAddUsersDeliveryCrewGroup(request):
+    delivery_group = Group.objects.get(name='DeliveryCrew')
+
+    if request.method == 'GET':
+        if request.user.groups.filter(name='Manager').exists():
+            deliveryUser = delivery_group.user_set.all()
+            serialized_managers = serializers.UserSerializer(
+                deliveryUser, many=True)
+            return Response(serialized_managers.data, status=status.HTTP_200_OK)
+        else:
+            return Response({'message': 'You have to be a manager to perform this action'}, status=status.HTTP_403_FORBIDDEN)
+
+    if request.method == 'POST':
+        username = request.data.get('username')
+        if username:
+            if delivery_group.user_set.filter(username=username).exists():
+                return Response({'message': 'User already exists in the DeliveryCrew group'}, status=status.HTTP_400_BAD_REQUEST)
+            else:
+                try:
+                    user = get_object_or_404(User, username=username)
+                except User.DoesNotExist:
+                    return Response({'message': 'User not found'}, status=status.HTTP_404_NOT_FOUND)
+
+                delivery_group.user_set.add(user)
+                return Response({'message': 'User added to the DeliveryCrew group successfully'}, status=status.HTTP_200_OK)
+        else:
+            return Response({'message': 'Username is required'}, status=status.HTTP_400_BAD_REQUEST)
+
+
+@api_view(['DELETE'])
+@permission_classes([IsAdminUser])
+def removeUserDeliveryCrewGroup(request, id):
+    delivery_group = Group.objects.get(name='DeliveryCrew')
+    user = get_object_or_404(User, id=id)
+
+    if request.method == 'DELETE':
+        if delivery_group.user_set.filter(id=id).exists():
+            delivery_group.user_set.remove(user)
+            return Response({'message': 'User removed from the DeliveryCrew group successfully'}, status=status.HTTP_200_OK)
+        else:
+            return Response({'message': 'User not found in the DeliveryCrew group'}, status=status.HTTP_404_NOT_FOUND)
