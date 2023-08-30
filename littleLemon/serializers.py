@@ -46,11 +46,33 @@ class CategorySerializer(serializers.ModelSerializer):
 
 
 class MenuItemSerializer(serializers.ModelSerializer):
+
     class Meta:
         model = models.MenuItem
         fields = ['id', 'title', 'price', 'featured', 'category']
 
     def validate(self, attrs):
-        if 'title' in attrs:
-            attrs['title'] = bleach.clean(attrs['title'])
-        return super().validate(attrs)
+        cleaned_title = bleach.clean(attrs.get('title'))
+
+        existing_title = models.MenuItem.objects.filter(title=cleaned_title).exclude(
+            pk=self.instance.pk if self.instance else None).first()
+
+        if existing_title:
+            raise serializers.ValidationError("This title is already in use.")
+
+        attrs['title'] = cleaned_title
+        return attrs
+
+
+class CartSerializer(serializers.ModelSerializer):
+    user = serializers.ReadOnlyField(source='user.username')
+    quantity = serializers.IntegerField(write_only=True)
+    unit_price = serializers.DecimalField(
+        max_digits=6, decimal_places=2, read_only=True)
+    price = serializers.DecimalField(
+        max_digits=6, decimal_places=2, read_only=True)
+
+    class Meta:
+        model = models.Cart
+        fields = ['id', 'user', 'menuitem', 'quantity',
+                  'unit_price', 'price']

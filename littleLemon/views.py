@@ -8,7 +8,7 @@ from rest_framework import permissions
 
 from rest_framework.throttling import UserRateThrottle
 from rest_framework.filters import SearchFilter, OrderingFilter
-from rest_framework import generics
+from rest_framework import generics, mixins
 from rest_framework.pagination import PageNumberPagination
 
 from django.contrib.auth.models import User, Group
@@ -178,3 +178,32 @@ def removeUserDeliveryCrewGroup(request, id):
             return Response({'message': 'User removed from the DeliveryCrew group successfully'}, status=status.HTTP_200_OK)
         else:
             return Response({'message': 'User not found in the DeliveryCrew group'}, status=status.HTTP_404_NOT_FOUND)
+
+
+@api_view(['GET', 'POST', 'DELETE'])
+@permission_classes([IsAuthenticated])
+def cartCustomerManagement(request):
+    if not request.user.groups.exists():
+        user = request.user
+        if request.method == 'GET':
+            cart = models.Cart.objects.filter(user=user)
+            serialized_items = serializers.CartSerializer(cart, many=True)
+            return Response(serialized_items.data, status=status.HTTP_200_OK)
+        elif request.method == 'POST':
+            serialized_items = serializers.CartSerializer(data=request.data)
+            if serialized_items.is_valid():
+                menuitem = serialized_items.validated_data['menuitem']
+                quantity = serialized_items.validated_data['quantity']
+                unit_price = menuitem.price
+                total_price = unit_price * quantity
+                serialized_items.save(
+                    unit_price=unit_price, price=total_price, user=user)
+                return Response(serialized_items.data, status=status.HTTP_201_CREATED)
+            else:
+                return Response(serialized_items.errors, status=status.HTTP_400_BAD_REQUEST)
+        elif request.method == 'DELETE':
+            cart = models.Cart.objects.filter(user=user)
+            cart.delete()
+            return Response({'message': 'Cart deleted successfully'}, status=status.HTTP_200_OK)
+    else:
+        return Response({'message': 'You are a manager or delivery crew. You have to be a customer to order items.'}, status=status.HTTP_401_UNAUTHORIZED)
