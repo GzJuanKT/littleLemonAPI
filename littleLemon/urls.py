@@ -11,4 +11,6 @@ urlpatterns = [
     path('groups/delivery-crew/users', views.listAddUsersDeliveryCrewGroup),
     path('groups/delivery-crew/users/<int:id>',
          views.removeUserDeliveryCrewGroup),
+    # path('cart/menu-items', views.CartCustomerManagement.as_view()),
+    path('cart/menu-items', views.cartCustomerManagement),
 ]
