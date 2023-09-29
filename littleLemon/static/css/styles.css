@@ -1,0 +1,46 @@
+/* styles.css */
+
+/* Estilo general del cuerpo de la página */
+body {
+    font-family: 'Arial', sans-serif;
+    background-color: #f4f4f4;
+    margin: 0;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    height: 100vh;
+}
+
+/* Estilo de la tabla */
+table {
+    width: 80%;
+    border-collapse: collapse;
+    margin-top: 20px;
+    box-shadow: 0 0 10px rgba(0, 0, 0, 0.1);
+    background-color: #fff;
+}
+
+/* Estilo de los encabezados de la tabla */
+th {
+    background-color: #3498db;
+    color: #fff;
+    padding: 10px;
+}
+
+/* Estilo de las celdas de la tabla */
+td {
+    padding: 8px;
+    text-align: left;
+    border-bottom: 1px solid #ddd;
+}
+
+/* Estilo de las filas impares (opcional) */
+tr:nth-child(odd) {
+    background-color: #f9f9f9;
+}
+
+/* Hover en las filas (opcional) */
+tr:hover {
+    background-color: #f1f1f1;
+}
