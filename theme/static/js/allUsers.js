@@ -18,7 +18,7 @@ async function loadAndRenderUserList() {
 }
 
 async function fetchUserList(token) {
-    const response = await fetch('http://127.0.0.1:8000/users/users/', {
+    const response = await fetch('https://littlelemon-api-se1c.onrender.com/users/users/', {
         method: 'GET',
         headers: {
             'Authorization': `Token ${token}`,
