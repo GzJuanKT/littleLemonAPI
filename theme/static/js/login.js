@@ -12,7 +12,7 @@ document.getElementById('loginForm').addEventListener('submit', async function (
 
 async function loginUser() {
     const formData = new FormData(document.getElementById('loginForm'));
-    const response = await fetch('https://littlelemon-api-se1c.onrender.com/users/users/login/', {
+    const response = await fetch('https://littlelemon-api-se1c.onrender.com/users/users/login', {
         method: 'POST',
         body: formData,
     });
