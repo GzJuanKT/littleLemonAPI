@@ -76,3 +76,26 @@ class CartSerializer(serializers.ModelSerializer):
         model = models.Cart
         fields = ['id', 'user', 'menuitem', 'quantity',
                   'unit_price', 'price']
+
+
+class OrderSerializer(serializers.ModelSerializer):
+    user = serializers.ReadOnlyField(source='user.username')
+    # delivery_crew = serializers.ReadOnlyField(source='delivery_crew.username')
+
+    class Meta:
+        model = models.Order
+        fields = ['id', 'user', 'delivery_crew', 'status',
+                  'total', 'date']
+
+
+class OrderItemsSerializer(serializers.ModelSerializer):
+    order = serializers.ReadOnlyField(source='order.id')
+    quantity = serializers.IntegerField(read_only=True)
+    unit_price = serializers.DecimalField(
+        max_digits=6, decimal_places=2, read_only=True)
+    price = serializers.DecimalField(
+        max_digits=6, decimal_places=2, read_only=True)
+
+    class Meta:
+        model = models.OrderItem
+        fields = ['id', 'order', 'menuitem', 'quantity', 'unit_price', 'price']

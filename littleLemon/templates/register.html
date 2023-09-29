@@ -1,0 +1,38 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>REGISTRO</title>
+    <style>
+        form span {
+            font-size: 0.8rem;
+            color: rgb(20 83 45 / 0.7);
+        }
+
+        form ul>li {
+            list-style-type: disc;
+            list-style-position: inside;
+        }
+    </style>
+</head>
+
+<body>
+    {% extends 'base.html' %}
+    {% block content %}
+    {% load static %}
+    <main class="flex flex-col justify-center items-center">
+        <h2 class="text-3xl font-semibold my-10">REGISTRO DE USUARIO</h2>
+        <form action="" method="post" id="registrationForm">
+            {% csrf_token %}
+            {{ form.as_p }}
+
+            <button type="submit"
+                class="my-2 p-2 bg-green-900/70 rounded-2xl text-white hover:cursor-pointer">Registrarse</button>
+        </form>
+    </main>
+    {% endblock %}
+</body>
+
+</html>

@@ -1,23 +1,54 @@
 from rest_framework.response import Response
 from rest_framework.decorators import api_view, permission_classes, throttle_classes
 from rest_framework import status
-
 from rest_framework.permissions import IsAuthenticated, IsAuthenticatedOrReadOnly, IsAdminUser
-
 from rest_framework import permissions
-
-from rest_framework.throttling import UserRateThrottle
+from rest_framework.throttling import AnonRateThrottle, UserRateThrottle
 from rest_framework.filters import SearchFilter, OrderingFilter
-from rest_framework import generics, mixins
+from rest_framework import generics
 from rest_framework.pagination import PageNumberPagination
 
+from django.shortcuts import get_object_or_404, render, redirect
+from django.core.paginator import Paginator, EmptyPage
 from django.contrib.auth.models import User, Group
+from django.contrib.auth import authenticate, login
 
 from . import models
 from . import serializers
-
-from django.shortcuts import get_object_or_404
+from .forms import UserRegistrationForm, UserLoginForm
 # Create your views here.
+
+
+def index(request):
+    return render(request, 'base.html')
+
+
+def register_user(request):
+    if request.method == 'POST':
+        form = UserRegistrationForm(request.POST)
+        if form.is_valid():
+            form.save()
+            return redirect('login_api')
+    else:
+        form = UserRegistrationForm()
+
+    return render(request, 'register.html', {'form': form})
+
+
+def login_user(request):
+    if request.method == 'POST':
+        form = UserLoginForm(request.POST)
+        if form.is_valid():
+            form.save()
+            return redirect('allusers_api')
+    else:
+        form = UserLoginForm()
+
+    return render(request, 'login.html', {'form': form})
+
+
+def all_users(request):
+    return render(request, 'allUsers.html')
 
 
 class menuItemsPagination(PageNumberPagination):
@@ -34,6 +65,7 @@ class menuItems(generics.ListCreateAPIView):
     search_fields = ['title', 'price']
     ordering_fields = ['title', 'price']
     pagination_class = menuItemsPagination
+    throttle_classes = [AnonRateThrottle, UserRateThrottle]
 
     def get_permissions(self):
         if self.request.method == 'POST' and self.request.user.groups.filter(name='Manager').exists():
@@ -53,6 +85,7 @@ class menuItems(generics.ListCreateAPIView):
 
 
 @api_view(['GET', 'PUT', 'PATCH', 'DELETE'])
+@throttle_classes([AnonRateThrottle, UserRateThrottle])
 @permission_classes([IsAuthenticatedOrReadOnly])
 def menuSingleItem(request, pk):
     items = get_object_or_404(models.MenuItem, pk=pk)
@@ -84,6 +117,7 @@ def menuSingleItem(request, pk):
 
 
 @api_view(['GET', 'POST'])
+@throttle_classes([AnonRateThrottle, UserRateThrottle])
 @permission_classes([IsAdminUser])
 def listAddUsersManagerGroup(request):
     manager_group = Group.objects.get(name='Manager')
@@ -136,6 +170,7 @@ def removeUserManagerGroup(request, id):
 
 
 @api_view(['GET', 'POST'])
+@throttle_classes([AnonRateThrottle, UserRateThrottle])
 @permission_classes([IsAdminUser])
 def listAddUsersDeliveryCrewGroup(request):
     delivery_group = Group.objects.get(name='DeliveryCrew')
@@ -167,6 +202,7 @@ def listAddUsersDeliveryCrewGroup(request):
 
 
 @api_view(['DELETE'])
+@throttle_classes([AnonRateThrottle, UserRateThrottle])
 @permission_classes([IsAdminUser])
 def removeUserDeliveryCrewGroup(request, id):
     delivery_group = Group.objects.get(name='DeliveryCrew')
@@ -178,9 +214,12 @@ def removeUserDeliveryCrewGroup(request, id):
             return Response({'message': 'User removed from the DeliveryCrew group successfully'}, status=status.HTTP_200_OK)
         else:
             return Response({'message': 'User not found in the DeliveryCrew group'}, status=status.HTTP_404_NOT_FOUND)
+    else:
+        return Response({'Message': 'Method not allowed'}, status=status.HTTP_405_METHOD_NOT_ALLOWED)
 
 
 @api_view(['GET', 'POST', 'DELETE'])
+@throttle_classes([AnonRateThrottle, UserRateThrottle])
 @permission_classes([IsAuthenticated])
 def cartCustomerManagement(request):
     if not request.user.groups.exists():
@@ -205,5 +244,144 @@ def cartCustomerManagement(request):
             cart = models.Cart.objects.filter(user=user)
             cart.delete()
             return Response({'message': 'Cart deleted successfully'}, status=status.HTTP_200_OK)
+        else:
+            return Response({'Message': 'Method not allowed'}, status=status.HTTP_405_METHOD_NOT_ALLOWED)
     else:
         return Response({'message': 'You are a manager or delivery crew. You have to be a customer to order items.'}, status=status.HTTP_401_UNAUTHORIZED)
+
+
+@api_view(['GET', 'POST'])
+@throttle_classes([AnonRateThrottle, UserRateThrottle])
+@permission_classes([IsAuthenticated])
+def orderViewManagement(request):
+    if not request.user.groups.exists():
+        if request.method == 'GET':
+            orders = models.Order.objects.filter(user=request.user)
+
+            serialized_orders = serializers.OrderSerializer(orders, many=True)
+            return Response(serialized_orders.data, status=status.HTTP_200_OK)
+
+        elif request.method == 'POST':
+            cart_items = models.Cart.objects.filter(user=request.user)
+
+            if not cart_items.exists():
+                return Response({'message': 'Cart is empty'}, status=status.HTTP_400_BAD_REQUEST)
+
+            total_price = sum(cart_items.price for cart_items in cart_items)
+
+            order = models.Order.objects.create(user=request.user,
+                                                total=total_price)
+
+            for cart_item in cart_items:
+                order_item = models.OrderItem.objects.create(order=order,
+                                                             menuitem=cart_item.menuitem,
+                                                             quantity=cart_item.quantity,
+                                                             unit_price=cart_item.unit_price,
+                                                             price=cart_item.price)
+
+            cart_items.delete()
+            return Response({'message': 'Order created successfully'}, status=status.HTTP_201_CREATED)
+        else:
+            return Response({'Message': 'Method not allowed'}, status=status.HTTP_405_METHOD_NOT_ALLOWED)
+
+    elif request.user.groups.filter(name='Manager').exists():
+        if request.method == 'GET':
+            orders = models.Order.objects.all()
+
+            user_filter = request.query_params.get('user')
+            delivery_crew_filter = request.query_params.get('delivery_crew')
+            date_filter = request.query_params.get('date')
+            status_filter = request.query_params.get('status')
+            perpage = request.query_params.get('perpage', default=2)
+            page = request.query_params.get('page', default=1)
+
+            if user_filter:
+                orders = orders.filter(user__username=user_filter)
+            if delivery_crew_filter:
+                orders = orders.filter(
+                    delivery_crew__username=delivery_crew_filter)
+            if date_filter:
+                orders = orders.filter(date=date_filter)
+            if status_filter:
+                orders = orders.filter(status=status_filter)
+
+            paginator = Paginator(orders, per_page=perpage)
+            try:
+                orders = paginator.page(number=page)
+            except EmptyPage:
+                orders = []
+
+            serialized_orders = serializers.OrderSerializer(orders, many=True)
+            return Response(serialized_orders.data, status=status.HTTP_200_OK)
+        else:
+            return Response({'Message': 'Method not allowed'}, status=status.HTTP_405_METHOD_NOT_ALLOWED)
+
+    elif request.user.groups.filter(name='DeliveryCrew').exists():
+        if request.method == 'GET':
+            orders = models.Order.objects.filter(delivery_crew=request.user)
+            serialized_orders = serializers.OrderSerializer(orders, many=True)
+            return Response(serialized_orders.data, status=status.HTTP_200_OK)
+
+
+@api_view(['GET', 'PUT', 'PATCH', 'DELETE'])
+@throttle_classes([AnonRateThrottle, UserRateThrottle])
+@permission_classes([IsAuthenticated])
+def orderItemViewManagement(request, id):
+    items = get_object_or_404(models.Order, id=id)
+
+    if not request.user.groups.exists():
+        if request.method == 'GET':
+            order_items = models.Order.objects.filter(id=id, user=request.user)
+            if order_items:
+                serialized_order_items = serializers.OrderSerializer(
+                    order_items, many=True)
+                return Response(serialized_order_items.data, status=status.HTTP_200_OK)
+            elif not order_items:
+                return Response({'message': 'Order not found'}, status=status.HTTP_404_NOT_FOUND)
+        else:
+            return Response({'Message': 'Method not allowed'}, status=status.HTTP_405_METHOD_NOT_ALLOWED)
+
+    elif request.user.groups.filter(name='Manager').exists():
+        if request.method == 'GET':
+            order_items = models.Order.objects.filter(id=id)
+            if order_items:
+                serialized_order_items = serializers.OrderSerializer(
+                    order_items, many=True)
+                return Response(serialized_order_items.data, status=status.HTTP_200_OK)
+            else:
+                return Response({'message': 'Order not found'}, status=status.HTTP_404_NOT_FOUND)
+
+        elif request.method in ['PUT', 'PATCH']:
+            serialized_order_items = serializers.OrderSerializer(
+                items, data=request.data, partial=request.method == 'PATCH')
+            if serialized_order_items.is_valid():
+                serialized_order_items.save()
+                return Response(serialized_order_items.data, status=status.HTTP_200_OK)
+            else:
+                return Response(serialized_order_items.errors, status=status.HTTP_400_BAD_REQUEST)
+
+        elif request.method == 'DELETE':
+            if items:
+                items.delete()
+                return Response({'message': 'Order deleted successfully'}, status=status.HTTP_200_OK)
+            else:
+                return Response({'message': 'Order not found'}, status=status.HTTP_404_NOT_FOUND)
+        else:
+            return Response({'Message': 'Method not allowed'}, status=status.HTTP_405_METHOD_NOT_ALLOWED)
+
+    elif request.user.groups.filter(name='DeliveryCrew').exists():
+        if request.method == 'PATCH':
+            new_status = request.data.get('status')
+            if new_status:
+                serialized_order = serializers.OrderSerializer(
+                    items, data={'status': new_status}, partial=True)
+
+                if serialized_order.is_valid():
+                    serialized_order.save()
+                    return Response({'message': 'Order status updated successfully'}, status=status.HTTP_200_OK)
+                else:
+                    return Response(serialized_order.errors, status=status.HTTP_400_BAD_REQUEST)
+            else:
+                return Response({'message': 'Status field is required'}, status=status.HTTP_400_BAD_REQUEST)
+        else:
+            return Response({'Message': 'Method not allowed'}, status=status.HTTP_405_METHOD_NOT_ALLOWED)

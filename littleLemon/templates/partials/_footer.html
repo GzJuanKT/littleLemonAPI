@@ -1,0 +1,24 @@
+{% load static tailwind_tags %}
+{% load static %}
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta http-equiv="X-UA-Compatible" content="IE=edge">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Document</title>
+    {% tailwind_css %}
+</head>
+
+<body class="bg-slate-100">
+    <footer class="container mx-auto w-full h-20 px-5 flex-col items-center justify-between ">
+        <img class="w-14 h-14" src="{% static 'img/logo_footer.png' %}" alt="footerLogo">
+        <div>
+            <hr class="h-px bg-gray-200 border-0 dark:bg-gray-700">
+            <p>Copyright Little Lemon</p>
+        </div>
+    </footer>
+</body>
+
+</html>

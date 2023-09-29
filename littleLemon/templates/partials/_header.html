@@ -1,0 +1,65 @@
+{% load static tailwind_tags %}
+{% load static %}
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta http-equiv="X-UA-Compatible" content="IE=edge">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Document</title>
+    <link rel="shortcut icon" type="image/png" href="{% static 'img/favicon.ico' %}" />
+    <style>
+        .marquee {
+            white-space: nowrap;
+            overflow: hidden;
+            animation: marquee 20s linear infinite;
+        }
+
+        .marquee:hover {
+            animation-play-state: paused;
+        }
+
+        @keyframes marquee {
+            0% {
+                transform: translateX(100%);
+            }
+
+            100% {
+                transform: translateX(-100%);
+            }
+        }
+    </style>
+
+    {% tailwind_css %}
+</head>
+
+<body>
+    <div class="p-3 gap-3 flex justify-end items-center">
+        <a class="p-2 bg-green-900/70 rounded-2xl text-white hover:cursor-pointer"
+            href="{% url 'register' %}">Registrarse</a>
+        <a class="p-2 bg-green-900/70 rounded-2xl text-white hover:cursor-pointer" href="{% url 'login_api' %}">Log
+            in</a>
+    </div>
+    <header class="container mx-auto w-full mt-5 flex flex-col items-center gap-y-5 justify-center">
+        <div>
+            <a href="{% url 'login_api' %}">
+                <img class="px-2" src="{% static 'img/logo.png' %}" alt="littleLemonLogo">
+            </a>
+        </div>
+        <nav class="w-full h-10 bg-green-900/70 flex flex-row gap-10 items-center justify-center text-white text-base">
+            <div class="marquee">
+                <a class="hover:text-white/80" href="#">Home</a>
+                <a class="hover:text-white/80" href="#">About</a>
+                <a class="hover:text-white/80" href="#">Menu</a>
+                <a class="hover:text-white/80" href="#">Reservation</a>
+                <a class="hover:text-white/80" href="#">Groups</a>
+                <a class="hover:text-white/80" href="#">Cart</a>
+                <a class="hover:text-white/80" href="#">Orders</a>
+                <a class="hover:text-white/80" href="{% url 'allusers_api' %}">Users</a>
+            </div>
+        </nav>
+    </header>
+</body>
+
+</html>

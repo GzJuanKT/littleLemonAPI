@@ -19,8 +19,20 @@ class CartAdmin(admin.ModelAdmin):
     search_fields = ('user__username', 'menuitem__title')
 
 
+class OrderAdmin(admin.ModelAdmin):
+    list_display = ('user', 'delivery_crew', 'status', 'total', 'date')
+    list_filter = ('user', 'status', 'date', 'delivery_crew')
+    search_fields = ('user__username', 'delivery_crew__title')
+
+
+class OrderItemsAdmin(admin.ModelAdmin):
+    list_display = ('order', 'menuitem', 'quantity', 'unit_price', 'price')
+    list_filter = ('order', 'menuitem')
+    search_fields = ('order__user__username', 'menuitem__title')
+
+
 admin.site.register(models.Cart, CartAdmin)
 admin.site.register(models.MenuItem, MenuItemAdmin)
 admin.site.register(models.Category, CategoryAdmin)
-admin.site.register(models.Order)
-admin.site.register(models.OrderItem)
+admin.site.register(models.Order, OrderAdmin)
+admin.site.register(models.OrderItem, OrderItemsAdmin)

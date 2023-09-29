@@ -2,6 +2,10 @@ from django.urls import path, include
 from . import views
 
 urlpatterns = [
+    path('', views.index, name='index'),
+    path('register/', views.register_user, name='register'),
+    path('login/', views.login_user, name='login_api'),
+    path('all_users/', views.all_users, name='allusers_api'),
     path('users/', include('djoser.urls')),
     path('users/', include('djoser.urls.authtoken')),
     path('menu-items', views.menuItems.as_view()),
@@ -11,6 +15,7 @@ urlpatterns = [
     path('groups/delivery-crew/users', views.listAddUsersDeliveryCrewGroup),
     path('groups/delivery-crew/users/<int:id>',
          views.removeUserDeliveryCrewGroup),
-    # path('cart/menu-items', views.CartCustomerManagement.as_view()),
     path('cart/menu-items', views.cartCustomerManagement),
+    path('orders', views.orderViewManagement),
+    path('orders/<int:id>', views.orderItemViewManagement),
 ]

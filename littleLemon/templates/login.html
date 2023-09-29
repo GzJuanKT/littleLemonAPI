@@ -1,0 +1,27 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Document</title>
+</head>
+
+<body>
+    {% extends 'base.html' %}
+    {% block content %}
+    {% load static %}
+    <main class="w-full h-full container mx-auto flex-col justify-center items-center">
+        <h2 class="text-center text-3xl font-bold my-2">User Login</h2>
+        <form id="loginForm" method="post" class="custom-form gap-4 flex flex-col justify-center items-center h-full">
+            {% csrf_token %}
+            {{ form.as_p }}
+            <button type="submit" class="bg-green-900/70 p-2 rounded-xl text-white hover:cursor-pointer">Login</button>
+        </form>
+
+    </main>
+    <script src="{% static 'js/login.js' %}"></script>
+    {% endblock %}
+</body>
+
+</html>
