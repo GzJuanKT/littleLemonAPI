@@ -1,5 +1,6 @@
+from requests import RequestException
 from rest_framework.response import Response
-from rest_framework.decorators import api_view, permission_classes, throttle_classes
+from rest_framework.decorators import api_view, permission_classes, throttle_classes, authentication_classes
 from rest_framework import status
 from rest_framework.permissions import IsAuthenticated, IsAuthenticatedOrReadOnly, IsAdminUser
 from rest_framework import permissions
@@ -7,6 +8,8 @@ from rest_framework.throttling import AnonRateThrottle, UserRateThrottle
 from rest_framework.filters import SearchFilter, OrderingFilter
 from rest_framework import generics
 from rest_framework.pagination import PageNumberPagination
+from rest_framework.authtoken.models import Token
+from rest_framework.authentication import SessionAuthentication, TokenAuthentication
 
 from django.shortcuts import get_object_or_404, render, redirect
 from django.core.paginator import Paginator, EmptyPage
@@ -35,16 +38,43 @@ def register_user(request):
     return render(request, 'register.html', {'form': form})
 
 
+@api_view(['POST'])
 def login_user(request):
+    print(request.data)
+    username = request.data.get('username', None)
+    if username is None:
+        return Response({'message': 'Username not provided'}, status=status.HTTP_400_BAD_REQUEST)
+
+    user = get_object_or_404(User, username=username)
+
+    if not user.check_password(request.data['password']):
+        return Response({'message': 'Invalid credentials'}, status=status.HTTP_404_NOT_FOUND)
+    token, created = Token.objects.get_or_create(user=user)
+    serializer = serializers.UserSerializer(user)
+    return Response({'token': token.key, 'user': serializer.data})
+
+
+def login_view(request):
     if request.method == 'POST':
-        form = UserLoginForm(request.POST)
+        form = UserLoginForm(request, request.POST)
         if form.is_valid():
-            form.save()
-            return redirect('allusers_api')
+            # Autenticar al usuario
+            user = authenticate(
+                request, username=form.cleaned_data['username'], password=form.cleaned_data['password'])
+            if user is not None:
+                # Iniciar sesión si la autenticación es exitosa
+                login(request, user)
     else:
         form = UserLoginForm()
 
     return render(request, 'login.html', {'form': form})
+
+
+@api_view(['GET'])
+@authentication_classes([SessionAuthentication, TokenAuthentication])
+@permission_classes([IsAuthenticated])
+def test_token(request):
+    return Response("Passed!")
 
 
 def all_users(request):

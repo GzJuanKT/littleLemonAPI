@@ -2,27 +2,30 @@ document.getElementById('loginForm').addEventListener('submit', async function (
     event.preventDefault();
 
     try {
-        await loginUser();
+        const token = await loginUser();
+        console.log("Token: " + token);
         alert('Login successful');
-
     } catch (error) {
-        handleError(error);
+        console.log("Error al iniciar sesionar: " + error.message);
     }
 });
 
 async function loginUser() {
     const formData = new FormData(document.getElementById('loginForm'));
-    const response = await fetch('https://littlelemon-api-se1c.onrender.com/users/users/login/', {
+
+    const response = await fetch('https://littlelemon-api-se1c.onrender.com/login/', {
         method: 'POST',
         body: formData,
     });
 
     if (!response.ok) {
-        throw new Error('Invalid username or password');
+        const errorMessage = await response.text();
+        console.error('Error en la solicitud:', errorMessage);
+        throw new Error('Error en la solicitud al servidor');
     }
 
     const data = await response.json();
-    const token = data.auth_token;
+    const token = data.token;
     localStorage.setItem('authToken', token);
     window.location.href = "https://littlelemon-api-se1c.onrender.com/all_users/";
     return token;
@@ -31,4 +34,11 @@ async function loginUser() {
 function handleError(error) {
     console.error('Error:', error.message);
     alert('Login failed: ' + error.message);
+}
+
+// Función para obtener el valor del token CSRF desde las cookies
+function getCookie(name) {
+    const value = `; ${document.cookie}`;
+    const parts = value.split(`; ${name}=`);
+    if (parts.length === 2) return parts.pop().split(';').shift();
 }

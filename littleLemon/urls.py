@@ -5,6 +5,8 @@ urlpatterns = [
     path('', views.index, name='index'),
     path('register/', views.register_user, name='register'),
     path('login/', views.login_user, name='login_api'),
+    path('log-in/', views.login_view, name='logintemplate_api'),
+    path('test_token/', views.test_token, name='tokentest_api'),
     path('all_users/', views.all_users, name='allusers_api'),
     path('users/', include('djoser.urls')),
     path('users/', include('djoser.urls.authtoken')),
